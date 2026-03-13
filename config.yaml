@@ -1,6 +1,6 @@
-name: "DeoVR Web Parser"
-version: "1.0.3"
-slug: "deovr_web_parser"
+name: "DeoVR Web Parser Fix"
+version: "1.0.4"
+slug: "deovr_web_parser_fix"
 description: "Parses video URLs for DeoVR VR Player"
 url: "https://github.com/gier76/deovr-webparser"
 arch:
