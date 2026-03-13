@@ -52,7 +52,7 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos})
 
 @app.post("/parse")
-async def handle_parse(request: Request, url: Form(...)):
+async def handle_parse(request: Request, url: str = Form(...)):
     global parsed_videos
     parsed_videos = parse_url(url)
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos, "success": True})
