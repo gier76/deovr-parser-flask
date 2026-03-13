@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from typing import Annotated
 import yt_dlp
 import json
 import os
@@ -24,7 +25,7 @@ def parse_url(url: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
-            if 'entries' in info:
+            if info and 'entries' in info:
                 # It's a playlist or a page with multiple videos
                 for entry in info['entries']:
                     if entry:
@@ -34,7 +35,7 @@ def parse_url(url: str):
                             "url": entry.get("url", ""),
                             "duration": entry.get("duration", 0)
                         })
-            else:
+            elif info:
                 # It's a single video
                 results.append({
                     "title": info.get("title", "Unknown"),
@@ -51,7 +52,7 @@ def parse_url(url: str):
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos})
 
-@app.post("/parse")
+@app.post("/parse", response_class=HTMLResponse)
 async def handle_parse(request: Request, url: str = Form(...)):
     global parsed_videos
     parsed_videos = parse_url(url)

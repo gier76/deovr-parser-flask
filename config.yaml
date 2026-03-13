@@ -1,5 +1,5 @@
 name: "DeoVR Web Parser"
-version: "1.0.1"
+version: "1.0.2"
 slug: "deovr_web_parser"
 description: "Parses video URLs for DeoVR VR Player"
 url: "https://github.com/gier76/deovr-webparser"
