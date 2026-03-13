@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeoVR Web Parser</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #00bcd4;
+            text-align: center;
+        }
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: white;
+        }
+        button {
+            padding: 12px 24px;
+            border-radius: 5px;
+            border: none;
+            background-color: #00bcd4;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #0097a7;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .video-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .video-item img {
+            width: 120px;
+            height: 67px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+        .video-info {
+            flex-grow: 1;
+        }
+        .video-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .deovr-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 8px;
+            color: #00bcd4;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .deovr-link:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DeoVR Web Parser</h1>
+        
+        <form action="/parse" method="post">
+            <input type="text" name="url" placeholder="Video-URL oder Such-Seite (z.B. eporner.com)" required>
+            <button type="submit">Parsen</button>
+        </form>
+
+        {% if success %}
+        <div class="results">
+            <h3>Gefundene Videos: {{ videos|length }}</h3>
+            {% for video in videos %}
+            <div class="video-item">
+                <img src="{{ video.thumbnail }}" alt="Thumbnail">
+                <div class="video-info">
+                    <div class="video-title">{{ video.title }}</div>
+                    <small>{{ video.duration }} Sekunden</small>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <a href="/deovr" target="_blank" class="deovr-link">
+                🔗 DeoVR JSON für Player öffnen (deovr://...)
+            </a>
+            <p style="text-align: center; font-size: 0.8em; color: #888;">
+                Gib im DeoVR Browser die Adresse deines Home Assistant ein: <br>
+                <code>http://[IP-VON-HA]:8080/deovr</code>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
