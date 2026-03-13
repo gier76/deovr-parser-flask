@@ -26,7 +26,6 @@ INDEX_HTML = """
         img { width: 150px; border-radius: 5px; }
         .info { flex-grow: 1; }
         .deovr-link { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #333; color: #00bcd4; text-decoration: none; border-radius: 5px; font-weight: bold; border: 1px solid #00bcd4; }
-        .loader { color: #888; font-style: italic; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -35,7 +34,7 @@ INDEX_HTML = """
         <p style="font-size: 0.9em; color: #888;">Unterstützt eporner (Videos & Tags), youtube und mehr.</p>
         
         <form method="POST" action="">
-            <input type="text" name="url" placeholder="URL eingeben (z.B. eporner tag seite)..." required>
+            <input type="text" name="url" placeholder="URL eingeben..." required>
             <button type="submit">Parsen</button>
         </form>
 
@@ -55,10 +54,6 @@ INDEX_HTML = """
             
             <div style="text-align: center;">
                 <a href="deovr" class="deovr-link">🔗 DeoVR JSON für Player öffnen</a>
-                <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
-                    Gib im DeoVR Browser ein: <br>
-                    <code>http://[DEINE-HA-IP]:8080/deovr</code>
-                </p>
             </div>
         {% elif has_posted %}
             <p style="color: #ff5252; margin-top: 20px; text-align: center;">Keine Videos gefunden oder Fehler beim Parsen.</p>
@@ -75,22 +70,40 @@ def extract_eporner_tag_page(url):
         resp = requests.get(url, headers=headers, timeout=10)
         html = resp.text
         
-        # Regex to find video links on eporner
-        # Format: <a href="/hd-porn/MBvIsFrv6Sc/..." title="Title">
-        # and thumbnails: <img src="https://static-eu-cdn.eporner.com/thumbs/static/.../img.jpg"
+        # Super robust extraction: find all links that look like video links
+        # and images that look like thumbnails
         
-        # Find all video containers
-        video_blocks = re.findall(r'<div class="post-g">.*?<a href="(/hd-porn/.*?/)".*?title="(.*?)".*?src="(.*?)"', html, re.DOTALL)
+        # 1. Find all post containers
+        # Eporner often uses <div class="post-g" ...>
+        containers = html.split('<div class="post-g"')
         
-        for link, title, thumb in video_blocks:
-            full_url = "https://www.eporner.com" + link
-            results.append({
-                "title": title,
-                "thumbnail": thumb,
-                "url": full_url,
-                "duration": 0 # Duration extraction needs more regex or secondary requests
-            })
-            if len(results) >= 20: break # Limit to 20 for speed
+        for block in containers[1:]: # skip first split part
+            # Extract link
+            link_match = re.search(r'href="(/hd-porn/.*?/|/video-.*?/)"', block)
+            # Extract title
+            title_match = re.search(r'title="(.*?)"', block)
+            # Extract thumbnail (often in src or data-src)
+            thumb_match = re.search(r'(?:src|data-src)="(http.*?\.jpg)"', block)
+            # Extract duration
+            dur_match = re.search(r'<span class="v-duration">(.*?)</span>', block)
+            
+            if link_match and title_match and thumb_match:
+                duration_str = dur_match.group(1) if dur_match else "0:00"
+                # Convert 0:00 to seconds
+                try:
+                    parts = list(map(int, duration_str.split(':')))
+                    duration = parts[0]*60 + parts[1] if len(parts) == 2 else parts[0]*3600 + parts[1]*60 + parts[2] if len(parts) == 3 else 0
+                except:
+                    duration = 0
+                    
+                results.append({
+                    "title": title_match.group(1),
+                    "thumbnail": thumb_match.group(1),
+                    "url": "https://www.eporner.com" + link_match.group(1),
+                    "duration": duration
+                })
+            
+            if len(results) >= 30: break
             
     except Exception as e:
         print(f"Eporner extraction error: {e}")
@@ -99,11 +112,11 @@ def extract_eporner_tag_page(url):
 def parse_url(url):
     if not url: return []
     
-    # Check if it's an eporner tag/search page
-    if "eporner.com" in url and ("/tag/" in url or "/search/" in url):
+    # Check if it's an eporner page
+    if "eporner.com" in url:
         return extract_eporner_tag_page(url)
         
-    # Default yt-dlp extraction
+    # Default yt-dlp extraction for others
     ydl_opts = {
         'quiet': True, 
         'no_warnings': True,
