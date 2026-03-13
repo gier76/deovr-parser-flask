@@ -47,11 +47,11 @@ def parse_url(url: str):
         
     return results
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos})
 
-@app.post("/parse", response_class=HTMLResponse)
+@app.post("/parse")
 async def handle_parse(request: Request):
     global parsed_videos
     form_data = await request.form()
