@@ -1,85 +1,83 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
+from flask import Flask, request, render_template_string, jsonify
 import yt_dlp
-import json
 import os
 
-app = FastAPI()
-templates = Jinja2Templates(directory="app/templates")
+app = Flask(__name__)
 
-# Global storage for parsed videos (simple in-memory cache)
+# Global storage for parsed videos
 parsed_videos = []
 
-def parse_url(url: str):
-    if not url:
-        return []
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': 'in_playlist',
-    }
-    
+INDEX_HTML = """
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>DeoVR Web Parser Flask</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 800px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 10px; }
+        input { width: 70%; padding: 10px; }
+        button { padding: 10px 20px; background: #00bcd4; border: none; color: white; cursor: pointer; }
+        .video { display: flex; gap: 10px; margin-top: 10px; background: #2a2a2a; padding: 10px; }
+        img { width: 100px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DeoVR Web Parser (Flask)</h1>
+        <form method="POST" action="/parse">
+            <input type="text" name="url" placeholder="Video URL" required>
+            <button type="submit">Parsen</button>
+        </form>
+        {% if videos %}
+            <h3>Gefunden: {{ videos|length }}</h3>
+            {% for video in videos %}
+                <div class="video">
+                    <img src="{{ video.thumbnail }}">
+                    <div>{{ video.title }}<br><small>{{ video.duration }}s</small></div>
+                </div>
+            {% endfor %}
+            <a href="/deovr" style="color: #00bcd4; display: block; margin-top: 20px;">JSON für DeoVR</a>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+def parse_url(url):
+    ydl_opts = {'quiet': True, 'extract_flat': 'in_playlist'}
     results = []
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            
-            if info and 'entries' in info:
-                for entry in info['entries']:
-                    if entry:
-                        results.append({
-                            "title": entry.get("title", "Unknown"),
-                            "thumbnail": entry.get("thumbnail", ""),
-                            "url": entry.get("url", ""),
-                            "duration": entry.get("duration", 0)
-                        })
-            elif info:
-                results.append({
-                    "title": info.get("title", "Unknown"),
-                    "thumbnail": info.get("thumbnail", ""),
-                    "url": info.get("url", ""),
-                    "duration": info.get("duration", 0)
-                })
+            entries = info.get('entries', [info])
+            for entry in entries:
+                if entry:
+                    results.append({
+                        "title": entry.get("title", "Unknown"),
+                        "thumbnail": entry.get("thumbnail", ""),
+                        "url": entry.get("url", ""),
+                        "duration": entry.get("duration", 0)
+                    })
     except Exception as e:
-        print(f"Error parsing URL {url}: {e}")
-        
+        print(f"Error: {e}")
     return results
 
-@app.get("/")
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos})
+@app.route("/")
+def home():
+    return render_template_string(INDEX_HTML, videos=parsed_videos)
 
-@app.post("/parse")
-async def handle_parse(request: Request):
+@app.route("/parse", methods=["POST"])
+def handle_parse():
     global parsed_videos
-    form_data = await request.form()
-    url = str(form_data.get("url", ""))
+    url = request.form.get("url")
     parsed_videos = parse_url(url)
-    return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos, "success": True})
+    return render_template_string(INDEX_HTML, videos=parsed_videos)
 
-@app.get("/deovr")
-async def get_deovr_json():
-    scenes_list = []
-    for vid in parsed_videos:
-        scenes_list.append({
-            "title": vid["title"],
-            "videoLength": vid["duration"],
-            "thumbnailUrl": vid["thumbnail"],
-            "video_url": vid["url"]
-        })
-    
-    deovr_json = {
-        "scenes": [
-            {
-                "name": "Web Results",
-                "list": scenes_list
-            }
-        ]
-    }
-    return JSONResponse(content=deovr_json)
+@app.route("/deovr")
+def get_deovr():
+    scenes = [{"title": v["title"], "videoLength": v["duration"], "thumbnailUrl": v["thumbnail"], "video_url": v["url"]} for v in parsed_videos]
+    return jsonify({"scenes": [{"name": "Flask Results", "list": scenes}]})
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080)

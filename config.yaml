@@ -1,8 +1,8 @@
-name: "DeoVR Web Parser Ultra"
-version: "1.0.5"
-slug: "deovr_ultra_fix"
-description: "Parses video URLs for DeoVR VR Player"
-url: "https://github.com/gier76/deovr-webparser"
+name: "DeoVR Parser Flask"
+version: "2.0.0"
+slug: "deovr_flask"
+description: "Flask-based Video Parser for DeoVR"
+url: "https://github.com/gier76/deovr-parser-flask"
 arch:
   - aarch64
   - amd64
@@ -14,7 +14,7 @@ boot: auto
 ingress: true
 ingress_port: 8080
 panel_icon: mdi:vlc
-panel_title: DeoVR Parser
+panel_title: DeoVR Flask
 options:
   log_level: info
 schema:
