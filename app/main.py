@@ -1,7 +1,6 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from typing import Annotated
 import yt_dlp
 import json
 import os
@@ -13,6 +12,8 @@ templates = Jinja2Templates(directory="app/templates")
 parsed_videos = []
 
 def parse_url(url: str):
+    if not url:
+        return []
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'quiet': True,
@@ -26,7 +27,6 @@ def parse_url(url: str):
             info = ydl.extract_info(url, download=False)
             
             if info and 'entries' in info:
-                # It's a playlist or a page with multiple videos
                 for entry in info['entries']:
                     if entry:
                         results.append({
@@ -36,7 +36,6 @@ def parse_url(url: str):
                             "duration": entry.get("duration", 0)
                         })
             elif info:
-                # It's a single video
                 results.append({
                     "title": info.get("title", "Unknown"),
                     "thumbnail": info.get("thumbnail", ""),
@@ -53,16 +52,16 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos})
 
 @app.post("/parse", response_class=HTMLResponse)
-async def handle_parse(request: Request, url: str = Form(...)):
+async def handle_parse(request: Request):
     global parsed_videos
+    form_data = await request.form()
+    url = str(form_data.get("url", ""))
     parsed_videos = parse_url(url)
     return templates.TemplateResponse("index.html", {"request": request, "videos": parsed_videos, "success": True})
 
 @app.get("/deovr")
 async def get_deovr_json():
-    # Construct the DeoVR Selection Scene JSON
     scenes_list = []
-    
     for vid in parsed_videos:
         scenes_list.append({
             "title": vid["title"],
@@ -79,7 +78,6 @@ async def get_deovr_json():
             }
         ]
     }
-    
     return JSONResponse(content=deovr_json)
 
 if __name__ == "__main__":
