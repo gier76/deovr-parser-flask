@@ -1,7 +1,7 @@
-name: "DeoVR Parser Flask"
-version: "2.0.3"
-slug: "deovr_flask"
-description: "Flask-based Video Parser for DeoVR"
+name: "DeoVR Parser Final"
+version: "3.0.0"
+slug: "deovr_final"
+description: "Flask-based Video Parser for DeoVR - Final Version"
 url: "https://github.com/gier76/deovr-parser-flask"
 arch:
   - aarch64
@@ -14,7 +14,7 @@ boot: auto
 ingress: true
 ingress_port: 8080
 panel_icon: mdi:vlc
-panel_title: DeoVR Flask
+panel_title: DeoVR Final
 options:
   log_level: info
 schema:
